@@ -1,0 +1,468 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Pillar 3: Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUsernameKey(key) {
+      return key is string && key.size() >= 1 && key.size() <= 40 && key.matches('^[a-z0-9._\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email.lower() == 'yuliwinarsih771@guru.sma.belajar.id';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidRole(role) {
+      return role in ['admin', 'teknisi', 'guru', 'siswa', 'pengguna'];
+    }
+
+    function isValidSelfRole(role) {
+      return role in ['guru', 'siswa', 'pengguna'];
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'unit', 'idNumber', 'bio', 'active', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'role', 'unit', 'idNumber', 'bio', 'active', 'createdAt', 'updatedAt', 'inviteId', 'username'])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.role is string && isValidRole(data.role)
+        && data.unit is string && data.unit.size() <= 60
+        && data.idNumber is string && data.idNumber.size() <= 40
+        && data.bio is string && data.bio.size() <= 240
+        && data.active is bool
+        && (!('inviteId' in data) || isValidId(data.inviteId))
+        && (!('username' in data) || (data.username is string && data.username.size() <= 40 && data.username.matches('^[a-zA-Z0-9._\\-]*$')))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivateInfo(data) {
+      return data.keys().hasAll(['uid', 'email', 'phone', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'phone', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.email is string && data.email.size() <= 120
+        && data.phone is string && data.phone.size() <= 30
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserInvite(data) {
+      return data.keys().hasAll(['email', 'displayName', 'role', 'unit', 'idNumber', 'phone', 'bio', 'active', 'claimed', 'claimedByUid', 'invitedBy', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['email', 'displayName', 'username', 'role', 'unit', 'idNumber', 'phone', 'bio', 'active', 'claimed', 'claimedByUid', 'invitedBy', 'createdAt', 'updatedAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 120
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && (!('username' in data) || (data.username is string && data.username.size() <= 40 && data.username.matches('^[a-zA-Z0-9._\\-]*$')))
+        && data.role is string && isValidRole(data.role)
+        && data.unit is string && data.unit.size() <= 60
+        && data.idNumber is string && data.idNumber.size() <= 40
+        && data.phone is string && data.phone.size() <= 30
+        && data.bio is string && data.bio.size() <= 240
+        && data.active is bool
+        && data.claimed is bool
+        && data.claimedByUid is string && data.claimedByUid.size() <= 128
+        && isValidId(data.invitedBy)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUsernameAuth(data) {
+      return data.keys().hasAll(['uid', 'salt', 'iv', 'encryptedEmail', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'salt', 'iv', 'encryptedEmail', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.salt is string && data.salt.size() >= 16 && data.salt.size() <= 64
+        && data.iv is string && data.iv.size() >= 12 && data.iv.size() <= 64
+        && data.encryptedEmail is string && data.encryptedEmail.size() >= 16 && data.encryptedEmail.size() <= 512
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'grantedBy', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'grantedBy', 'createdAt'])
+        && isValidId(data.uid)
+        && data.grantedBy is string && data.grantedBy.size() >= 1 && data.grantedBy.size() <= 128
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAsset(data) {
+      return data.keys().hasAll(['code', 'name', 'category', 'brand', 'condition', 'location', 'fundingSource', 'procurementYear', 'nextMaintenanceDate', 'labScope', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['code', 'name', 'category', 'brand', 'condition', 'location', 'fundingSource', 'procurementYear', 'nextMaintenanceDate', 'labScope', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.code is string && data.code.size() >= 1 && data.code.size() <= 50
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.category is string && data.category in ['Komputer', 'Monitor', 'Printer', 'Jaringan', 'Proyektor', 'Periferal', 'Lainnya']
+        && data.brand is string && data.brand.size() >= 1 && data.brand.size() <= 80
+        && data.condition is string && data.condition in ['Baik', 'Perlu perawatan', 'Rusak']
+        && data.location is string && data.location.size() >= 1 && data.location.size() <= 100
+        && data.fundingSource is string && data.fundingSource.size() <= 80
+        && data.procurementYear is number && data.procurementYear >= 1990 && data.procurementYear <= 2100
+        && data.nextMaintenanceDate is string && data.nextMaintenanceDate.size() <= 20
+        && data.labScope is string && data.labScope == 'smkn1sambeng'
+        && isValidId(data.createdBy)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidLoan(data) {
+      return data.keys().hasAll(['assetId', 'assetCode', 'assetName', 'requesterId', 'borrowerName', 'borrowerRole', 'unit', 'borrowDate', 'returnDate', 'purpose', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['assetId', 'assetCode', 'assetName', 'requesterId', 'borrowerName', 'borrowerRole', 'unit', 'borrowDate', 'returnDate', 'purpose', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && isValidId(data.assetId)
+        && data.assetCode is string && data.assetCode.size() >= 1 && data.assetCode.size() <= 50
+        && data.assetName is string && data.assetName.size() >= 1 && data.assetName.size() <= 100
+        && isValidId(data.requesterId)
+        && data.borrowerName is string && data.borrowerName.size() >= 1 && data.borrowerName.size() <= 80
+        && data.borrowerRole is string && data.borrowerRole in ['Guru', 'Siswa', 'Teknisi', 'Staf']
+        && data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 60
+        && data.borrowDate is string && data.borrowDate.size() >= 1 && data.borrowDate.size() <= 20
+        && data.returnDate is string && data.returnDate.size() >= 1 && data.returnDate.size() <= 20
+        && data.purpose is string && data.purpose.size() >= 1 && data.purpose.size() <= 240
+        && data.status is string && data.status in ['Menunggu', 'Disetujui', 'Dipinjam', 'Dikembalikan', 'Ditolak']
+        && data.notes is string && data.notes.size() <= 240
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSchedule(data) {
+      return data.keys().hasAll(['date', 'startTime', 'endTime', 'activity', 'requesterId', 'requesterName', 'requesterRole', 'unit', 'status', 'labScope', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['date', 'startTime', 'endTime', 'activity', 'requesterId', 'requesterName', 'requesterRole', 'unit', 'status', 'labScope', 'createdAt', 'updatedAt'])
+        && data.date is string && data.date.size() >= 1 && data.date.size() <= 20
+        && data.startTime is string && data.startTime.size() >= 1 && data.startTime.size() <= 10
+        && data.endTime is string && data.endTime.size() >= 1 && data.endTime.size() <= 10
+        && data.activity is string && data.activity.size() >= 1 && data.activity.size() <= 120
+        && isValidId(data.requesterId)
+        && data.requesterName is string && data.requesterName.size() >= 1 && data.requesterName.size() <= 80
+        && data.requesterRole is string && data.requesterRole in ['Guru', 'Siswa', 'Teknisi', 'Staf']
+        && data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 60
+        && data.status is string && data.status in ['Menunggu', 'Disetujui', 'Ditolak', 'Selesai']
+        && data.labScope is string && data.labScope == 'smkn1sambeng'
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMaintenance(data) {
+      return data.keys().hasAll(['assetId', 'assetCode', 'assetName', 'issue', 'actionTaken', 'technicianName', 'maintenanceDate', 'status', 'resultingCondition', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['assetId', 'assetCode', 'assetName', 'issue', 'actionTaken', 'technicianName', 'maintenanceDate', 'status', 'resultingCondition', 'createdBy', 'createdAt', 'updatedAt'])
+        && isValidId(data.assetId)
+        && data.assetCode is string && data.assetCode.size() >= 1 && data.assetCode.size() <= 50
+        && data.assetName is string && data.assetName.size() >= 1 && data.assetName.size() <= 100
+        && data.issue is string && data.issue.size() >= 1 && data.issue.size() <= 240
+        && data.actionTaken is string && data.actionTaken.size() <= 240
+        && data.technicianName is string && data.technicianName.size() >= 1 && data.technicianName.size() <= 80
+        && data.maintenanceDate is string && data.maintenanceDate.size() >= 1 && data.maintenanceDate.size() <= 20
+        && data.status is string && data.status in ['Dijadwalkan', 'Dalam Proses', 'Selesai']
+        && data.resultingCondition is string && data.resultingCondition in ['Baik', 'Perlu perawatan', 'Rusak']
+        && isValidId(data.createdBy)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['userId', 'date', 'checkInTime', 'checkOutTime', 'visitorName', 'visitorRole', 'unit', 'activity', 'workstation', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'date', 'checkInTime', 'checkOutTime', 'visitorName', 'visitorRole', 'unit', 'activity', 'workstation', 'notes', 'createdAt', 'updatedAt'])
+        && isValidId(data.userId)
+        && data.date is string && data.date.size() >= 1 && data.date.size() <= 20
+        && data.checkInTime is string && data.checkInTime.size() >= 1 && data.checkInTime.size() <= 10
+        && data.checkOutTime is string && data.checkOutTime.size() <= 10
+        && data.visitorName is string && data.visitorName.size() >= 1 && data.visitorName.size() <= 80
+        && data.visitorRole is string && data.visitorRole in ['Guru', 'Siswa', 'Teknisi', 'Staf']
+        && data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 60
+        && data.activity is string && data.activity.size() >= 1 && data.activity.size() <= 120
+        && data.workstation is string && data.workstation.size() <= 40
+        && data.notes is string && data.notes.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Collection: username_auth (Password-encrypted email envelope for username login)
+    match /username_auth/{usernameKey} {
+      allow get: if isValidUsernameKey(usernameKey);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidUsernameKey(usernameKey)
+        && isValidUsernameAuth(incoming())
+        && (incoming().uid == request.auth.uid || isAdmin())
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidUsernameKey(usernameKey)
+        && isValidUsernameAuth(incoming())
+        && incoming().uid == existing().uid
+        && (existing().uid == request.auth.uid || isAdmin())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['salt', 'iv', 'encryptedEmail', 'updatedAt']);
+      allow delete: if isVerifiedUser()
+        && isValidUsernameKey(usernameKey)
+        && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // Collection: user_invites (Pre-registered user accounts created by Admin)
+    match /user_invites/{inviteId} {
+      allow get: if isVerifiedUser() && isValidId(inviteId) && (isAdmin() || existing().email == request.auth.token.email.lower());
+      allow list: if isVerifiedUser() && (isAdmin() || existing().email == request.auth.token.email.lower());
+      allow create: if isAdmin()
+        && isValidId(inviteId)
+        && isValidUserInvite(incoming())
+        && incoming().invitedBy == request.auth.uid
+        && incoming().claimed == false
+        && incoming().claimedByUid == ''
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(inviteId)
+        && isValidUserInvite(incoming())
+        && incoming().invitedBy == existing().invitedBy
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isAdmin()
+            && existing().claimed == false
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'username', 'role', 'unit', 'idNumber', 'phone', 'bio', 'active', 'updatedAt']))
+          || (existing().claimed == false
+            && existing().email == request.auth.token.email.lower()
+            && incoming().claimed == true
+            && incoming().claimedByUid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['claimed', 'claimedByUid', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(inviteId);
+    }
+
+    // Collection: users (Non-PII operational profile)
+    match /users/{userId} {
+      allow get: if isVerifiedUser() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          (isOwner(userId) && !('inviteId' in incoming()) && isValidSelfRole(incoming().role) && incoming().active == true)
+          || (isOwner(userId)
+            && ('inviteId' in incoming())
+            && isValidId(incoming().inviteId)
+            && exists(/databases/$(database)/documents/user_invites/$(incoming().inviteId))
+            && get(/databases/$(database)/documents/user_invites/$(incoming().inviteId)).data.email == request.auth.token.email.lower()
+            && get(/databases/$(database)/documents/user_invites/$(incoming().inviteId)).data.claimed == false
+            && incoming().role == get(/databases/$(database)/documents/user_invites/$(incoming().inviteId)).data.role
+            && incoming().active == get(/databases/$(database)/documents/user_invites/$(incoming().inviteId)).data.active)
+          || isAdmin()
+        );
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isOwner(userId)
+            && isValidSelfRole(existing().role)
+            && isValidSelfRole(incoming().role)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'username', 'role', 'unit', 'idNumber', 'bio', 'updatedAt']))
+          || (isOwner(userId)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'username', 'unit', 'idNumber', 'bio', 'updatedAt']))
+          || (isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'username', 'role', 'unit', 'idNumber', 'bio', 'active', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(userId) && !isOwner(userId);
+
+      // Subcollection: private PII (email, phone)
+      match /private/{docId} {
+        allow get: if isVerifiedUser() && isValidId(userId) && docId == 'info' && (isOwner(userId) || isAdmin());
+        allow list: if false;
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && docId == 'info'
+          && isValidUserPrivateInfo(incoming())
+          && incoming().uid == userId
+          && incoming().updatedAt == request.time
+          && (isOwner(userId) || isAdmin());
+        allow update: if isVerifiedUser()
+          && isValidId(userId)
+          && docId == 'info'
+          && isValidUserPrivateInfo(incoming())
+          && incoming().uid == existing().uid
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phone', 'updatedAt'])
+          && (isOwner(userId) || isAdmin());
+        allow delete: if isAdmin() && isValidId(userId) && docId == 'info';
+      }
+    }
+
+    // Collection: admins
+    match /admins/{userId} {
+      allow get: if isVerifiedUser() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidAdminRecord(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && (
+          (isAdmin() && incoming().grantedBy == request.auth.uid)
+          || (isOwner(userId)
+            && exists(/databases/$(database)/documents/users/$(userId))
+            && get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin'
+            && ('inviteId' in get(/databases/$(database)/documents/users/$(userId)).data)
+            && incoming().grantedBy == get(/databases/$(database)/documents/user_invites/$(get(/databases/$(database)/documents/users/$(userId)).data.inviteId)).data.invitedBy)
+        );
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(userId) && !isOwner(userId);
+    }
+
+    // Collection: assets (Inventaris)
+    match /assets/{assetId} {
+      allow get: if isVerifiedUser() && isValidId(assetId);
+      allow list: if isVerifiedUser() && existing().labScope == 'smkn1sambeng';
+      allow create: if isAdmin()
+        && isValidId(assetId)
+        && isValidAsset(incoming())
+        && incoming().createdBy == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(assetId)
+        && isValidAsset(incoming())
+        && incoming().createdBy == existing().createdBy
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['code', 'name', 'category', 'brand', 'condition', 'location', 'fundingSource', 'procurementYear', 'nextMaintenanceDate', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(assetId);
+    }
+
+    // Collection: loans (Peminjaman)
+    match /loans/{loanId} {
+      allow get: if isVerifiedUser() && isValidId(loanId) && (existing().requesterId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().requesterId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser()
+        && isValidId(loanId)
+        && isValidLoan(incoming())
+        && incoming().requesterId == request.auth.uid
+        && incoming().status == 'Menunggu'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/assets/$(incoming().assetId));
+      allow update: if isVerifiedUser()
+        && isValidId(loanId)
+        && isValidLoan(incoming())
+        && incoming().assetId == existing().assetId
+        && incoming().requesterId == existing().requesterId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'returnDate', 'updatedAt']))
+          || (existing().requesterId == request.auth.uid
+            && existing().status == 'Menunggu'
+            && incoming().status == 'Menunggu'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['borrowDate', 'returnDate', 'purpose', 'notes', 'updatedAt']))
+        );
+      allow delete: if isValidId(loanId) && (isAdmin() || (isVerifiedUser() && existing().requesterId == request.auth.uid && existing().status == 'Menunggu'));
+    }
+
+    // Collection: schedules (Jadwal Lab)
+    match /schedules/{scheduleId} {
+      allow get: if isVerifiedUser() && isValidId(scheduleId);
+      allow list: if isVerifiedUser() && existing().labScope == 'smkn1sambeng';
+      allow create: if isVerifiedUser()
+        && isValidId(scheduleId)
+        && isValidSchedule(incoming())
+        && incoming().requesterId == request.auth.uid
+        && incoming().status == 'Menunggu'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(scheduleId)
+        && isValidSchedule(incoming())
+        && incoming().requesterId == existing().requesterId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'date', 'startTime', 'endTime', 'activity', 'unit', 'updatedAt']))
+          || (existing().requesterId == request.auth.uid
+            && existing().status == 'Menunggu'
+            && incoming().status == 'Menunggu'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['date', 'startTime', 'endTime', 'activity', 'unit', 'updatedAt']))
+        );
+      allow delete: if isValidId(scheduleId) && (isAdmin() || (isVerifiedUser() && existing().requesterId == request.auth.uid && existing().status == 'Menunggu'));
+    }
+
+    // Collection: maintenances (Maintenance)
+    match /maintenances/{maintenanceId} {
+      allow get: if isVerifiedUser() && isValidId(maintenanceId) && (existing().createdBy == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().createdBy == request.auth.uid || isAdmin());
+      allow create: if isAdmin()
+        && isValidId(maintenanceId)
+        && isValidMaintenance(incoming())
+        && incoming().createdBy == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/assets/$(incoming().assetId));
+      allow update: if isAdmin()
+        && isValidId(maintenanceId)
+        && isValidMaintenance(incoming())
+        && incoming().assetId == existing().assetId
+        && incoming().createdBy == existing().createdBy
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['issue', 'actionTaken', 'technicianName', 'maintenanceDate', 'status', 'resultingCondition', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(maintenanceId);
+    }
+
+    // Collection: attendances (Absensi)
+    match /attendances/{attendanceId} {
+      allow get: if isVerifiedUser() && isValidId(attendanceId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser()
+        && isValidId(attendanceId)
+        && isValidAttendance(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(attendanceId)
+        && isValidAttendance(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['checkOutTime', 'workstation', 'notes', 'activity', 'updatedAt']))
+          || (existing().userId == request.auth.uid
+            && existing().checkOutTime == ''
+            && incoming().diff(existing()).affectedKeys().hasOnly(['checkOutTime', 'notes', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(attendanceId);
+    }
+  }
+}

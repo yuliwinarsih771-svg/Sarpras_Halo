@@ -1,0 +1,665 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Operational user profile for SIPALAK lab members without PII.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "teknisi", "guru", "siswa", "pengguna"]
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "idNumber": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "inviteId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9._\\-]*$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "role", "unit", "idNumber", "bio", "active", "createdAt", "updatedAt"]
+    },
+    "UserInvite": {
+      "title": "UserInvite",
+      "description": "Pre-registered user account invitation created by Admin for Google Sign-In provisioning.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "username": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9._\\-]*$"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "teknisi", "guru", "siswa", "pengguna"]
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "idNumber": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "claimed": {
+          "type": "boolean"
+        },
+        "claimedByUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "invitedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "email",
+        "displayName",
+        "role",
+        "unit",
+        "idNumber",
+        "phone",
+        "bio",
+        "active",
+        "claimed",
+        "claimedByUid",
+        "invitedBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Strictly isolated PII (email and phone) for a SIPALAK user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "phone", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted admin role assignment document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "grantedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "grantedBy", "createdAt"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "Laboratory hardware and equipment inventory item.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Komputer", "Monitor", "Printer", "Jaringan", "Proyektor", "Periferal", "Lainnya"]
+        },
+        "brand": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["Baik", "Perlu perawatan", "Rusak"]
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "fundingSource": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "procurementYear": {
+          "type": "number"
+        },
+        "nextMaintenanceDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "labScope": {
+          "type": "string",
+          "enum": ["smkn1sambeng"]
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "category",
+        "brand",
+        "condition",
+        "location",
+        "fundingSource",
+        "procurementYear",
+        "nextMaintenanceDate",
+        "labScope",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Loan": {
+      "title": "Loan",
+      "description": "Asset borrowing and return transaction.",
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "assetCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "assetName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "requesterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "borrowerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "borrowerRole": {
+          "type": "string",
+          "enum": ["Guru", "Siswa", "Teknisi", "Staf"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "borrowDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "returnDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Menunggu", "Disetujui", "Dipinjam", "Dikembalikan", "Ditolak"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "assetId",
+        "assetCode",
+        "assetName",
+        "requesterId",
+        "borrowerName",
+        "borrowerRole",
+        "unit",
+        "borrowDate",
+        "returnDate",
+        "purpose",
+        "status",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LabSchedule": {
+      "title": "LabSchedule",
+      "description": "Computer laboratory booking schedule.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "startTime": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "endTime": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "activity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "requesterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "requesterName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "requesterRole": {
+          "type": "string",
+          "enum": ["Guru", "Siswa", "Teknisi", "Staf"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Menunggu", "Disetujui", "Ditolak", "Selesai"]
+        },
+        "labScope": {
+          "type": "string",
+          "enum": ["smkn1sambeng"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "date",
+        "startTime",
+        "endTime",
+        "activity",
+        "requesterId",
+        "requesterName",
+        "requesterRole",
+        "unit",
+        "status",
+        "labScope",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Maintenance": {
+      "title": "Maintenance",
+      "description": "Hardware maintenance and repair log.",
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "assetCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "assetName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "issue": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "actionTaken": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "technicianName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "maintenanceDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Dijadwalkan", "Dalam Proses", "Selesai"]
+        },
+        "resultingCondition": {
+          "type": "string",
+          "enum": ["Baik", "Perlu perawatan", "Rusak"]
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "assetId",
+        "assetCode",
+        "assetName",
+        "issue",
+        "actionTaken",
+        "technicianName",
+        "maintenanceDate",
+        "status",
+        "resultingCondition",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Computer laboratory visitor and session attendance record.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "checkInTime": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "checkOutTime": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "visitorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "visitorRole": {
+          "type": "string",
+          "enum": ["Guru", "Siswa", "Teknisi", "Staf"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "activity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "workstation": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "date",
+        "checkInTime",
+        "checkOutTime",
+        "visitorName",
+        "visitorRole",
+        "unit",
+        "activity",
+        "workstation",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UsernameAuth": {
+      "title": "UsernameAuth",
+      "description": "Encrypted email envelope keyed by user password for username-based Firebase Authentication.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "salt": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 64
+        },
+        "iv": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 64
+        },
+        "encryptedEmail": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 512
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "salt", "iv", "encryptedEmail", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Operational user profiles without PII."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Strictly isolated user PII (email, phone)."
+    },
+    "/user_invites/{inviteId}": {
+      "schema": { "$ref": "#/entities/UserInvite" },
+      "description": "Admin-created pre-registered user accounts awaiting first Google Sign-In."
+    },
+    "/username_auth/{usernameKey}": {
+      "schema": { "$ref": "#/entities/UsernameAuth" },
+      "description": "Password-encrypted email envelopes enabling username-based login without exposing emails or storing passwords."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Trusted administrator registry."
+    },
+    "/assets/{assetId}": {
+      "schema": { "$ref": "#/entities/Asset" },
+      "description": "Laboratory inventory assets."
+    },
+    "/loans/{loanId}": {
+      "schema": { "$ref": "#/entities/Loan" },
+      "description": "Asset borrowing and return requests."
+    },
+    "/schedules/{scheduleId}": {
+      "schema": { "$ref": "#/entities/LabSchedule" },
+      "description": "Laboratory usage schedule reservations."
+    },
+    "/maintenances/{maintenanceId}": {
+      "schema": { "$ref": "#/entities/Maintenance" },
+      "description": "Asset maintenance and repair logs."
+    },
+    "/attendances/{attendanceId}": {
+      "schema": { "$ref": "#/entities/Attendance" },
+      "description": "Laboratory visitor attendance entries."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "SIPALAK — Sistem Pelayanan Laboratorium Komputer",
+  "description": "Sistem informasi pelayanan laboratorium komputer SMK Negeri 1 Sambeng dengan sinkronisasi data real-time, inventaris QR, penjadwalan, peminjaman, perawatan, absensi, dan manajemen profil pengguna.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
